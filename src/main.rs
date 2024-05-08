@@ -1,20 +1,18 @@
 // Uncomment this block to pass the first stage
-use std::{
-    io::{Read, Write},
+use tokio::{
+    net::{TcpListener, TcpStream},
+    io::{AsyncReadExt, AsyncWriteExt}  // allows stream.write() and stream.read() to be async
 };
 
-use tokio::net::{TcpListener, TcpSocket};
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
-
-fn process(stream: &mut TcpStream) {
+async fn process(stream: &mut TcpStream) {
     loop {
         let mut buf: [u8; 512] = [0; 512];
-        let read_count = stream.read(&mut buf).unwrap();
+        let read_count = stream.read(&mut buf).await.unwrap();
         
         if read_count == 0 {
             return;
         }
-        stream.write(b"+PONG\r\n").unwrap();
+        stream.write(b"+PONG\r\n").await.unwrap();
     }
 }
 
@@ -33,7 +31,7 @@ async fn main() {
             Ok((mut stream, _)) => {
                 // move stream into newly spawned task
                 tokio::spawn(async move {
-                    process(&mut stream);
+                    process(&mut stream).await;
                 });
             }
             Err(e) => {
